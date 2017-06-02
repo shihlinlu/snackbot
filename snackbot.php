@@ -8,12 +8,46 @@ use PhpSlackBot\Bot;
  */
 class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 
+	private $initiator;
+	private $drinks = array();
+	private $status = 'free';
+
 	protected function configure() {
-		$this->setName('/tea');
+		$this->setName('!tea');
 	}
 
 	protected function execute($message, $context) {
-		$this->send($this->getCurrentChannel(), null, "What kind of tea do you prefer? :tea-pot:");
+		$args = $this->getArgs($message);
+		$command = isset($args[1] ? $args[1] : '');
+
+		switch($command) {
+			case 'start':
+				$this->start($args);
+				break;
+			//case 'status':
+				//$this->status();
+				//break;
+			//case 'cancel':
+				//$this->end();
+				//break;
+			default:
+				$this->send($this->getCurrentChannel(), $this->getCurrentUser(), "Sorry, that is not possible. Please try again");
+		}
+	}
+
+	private function start($args) {
+		if($this->status == 'free') {
+			$this->subject = isset($args[2]) ? $args[2]: null;
+			if(!is_null($this->subject)) {
+				$this->subject = str_replace(array('<', '>'), '', $this->subject);
+			}
+			//$this->status = 'running';
+			$this->initiator = $this->getCurrentUser();
+			$this->drinks = array();
+			$this->send($this->getCurrentChannel(), null,
+				"The tea kettle has been started by ".$this->getUserNameFromUserId($this->initiator)."\n".
+				"Please wait!");
+		}
 	}
 
 }
@@ -25,7 +59,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function configure() {
-		$this->setName('/coffee');
+		$this->setName('!coffee');
 	}
 
 	protected function execute($message, $context) {
@@ -40,11 +74,11 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 class BagelCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function configure() {
-		$this->setName('/bagel');
+		$this->setName('!bagel');
 	}
 
 	protected function execute($message, $context) {
-		$this->send($this->getCurrentChannel(), null, "What kind of tea do you prefer? :bread:");
+		$this->send($this->getCurrentChannel(), null, "There are many bagels, you should go to the kitchen and find out. :bread:");
 	}
 
 }
@@ -55,7 +89,7 @@ class BagelCommand extends \PhpSlackBot\Command\BaseCommand {
 class HelpCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function configure() {
-		$this->setName('/help');
+		$this->setName('!help');
 	}
 
 	protected function execute($message, $context) {
