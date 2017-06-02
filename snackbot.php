@@ -26,4 +26,25 @@ $bot = new Bot();
 $bot->setToken($slack);
 $bot->loadCommand(new MyCommand());
 $bot->loadInternalCommands(); // this loads example commands
+
+// active messaging: sends messages to users without the need for them to send one first
+$bot->loadPushNotifier(function () {
+	return [
+		'channel' => '#pi-mirror-commands',
+		'username' => '@phpslackbot',
+		'message' => "You've been replaced!"
+		];
+});
+
+/**
+ *
+ * $bot->loadPushNotifier(function () {
+return [
+'channel' => '@phpslackbot',
+'username' => null,
+'message' => "It is time to buy another Sensly HAT" .time()
+];
+}, 1800);
+ **/
+
 $bot->run();
