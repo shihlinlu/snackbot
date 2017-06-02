@@ -18,7 +18,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function execute($message, $context) {
 		$args = $this->getArgs($message);
-		$command = isset($args[1] ? $args[1] : '');
+		$command = isset($args[1]) ? $args[1] : '';
 
 		switch($command) {
 			case 'start':
@@ -31,7 +31,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 				//$this->end();
 				//break;
 			default:
-				$this->send($this->getCurrentChannel(), $this->getCurrentUser(), "Sorry, that is not possible. Please try again");
+				$this->send($this->getCurrentChannel(), $this->getCurrentUser(), "Sorry, that is not a possible command. Please try again");
 		}
 	}
 
@@ -48,6 +48,26 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 				"The tea kettle has been started by ".$this->getUserNameFromUserId($this->initiator)."\n".
 				"Please wait!");
 		}
+	}
+
+	private function getArgs($message) {
+		$args = array();
+		if (isset($message['text'])) {
+			$args = array_values(array_filter(explode(' ', $message['text'])));
+		}
+		$commandName = $this->getName();
+		// Remove args which are before the command name
+		$finalArgs = array();
+		$remove = true;
+		foreach ($args as $arg) {
+			if ($commandName == $arg) {
+				$remove = false;
+			}
+			if (!$remove) {
+				$finalArgs[] = $arg;
+			}
+		}
+		return $finalArgs;
 	}
 
 }
