@@ -6,12 +6,72 @@ use PhpSlackBot\Bot;
 // custom command
 class MyCommand extends \PhpSlackBot\Command\BaseCommand {
 
+	//private $count = 0;
+	private $initiator;
+	private $scores = array();
+	private $status = 'free';
+
 	protected function configure() {
-		$this->setName('mycommand');
+		$this->setName('!snack');
 	}
 
 	protected function execute($message, $context) {
-		$this->send($this->getCurrentChannel(), null,'Hello !');
+		$args = $this->getArgs($message);
+		$command = isset($args[1]) ? $args[1] : '';
+
+		switch($command) {
+			case 'tea':
+				$this->tea($args);
+				break;
+			case 'status':
+				$this->status();
+				break;
+			default:
+				$this->send($this->getCurrentChannel(), $this->getCurrentUser(),'Error!!!. Use "'.$this->getName().' tea" or "'.$this->getName().' coffee"');
+
+		}
+	}
+
+	/**
+	 * Tea function
+	 */
+	private function tea($args) {
+		if ($this->status == 'free') {
+			$this->subject = isset($args[2]) ? $args[2] : null;
+			if (!is_null($this->subject)) {
+				$this->subject = str_replace(array('<', '>'), '', $this->subject);
+			}
+			$this->status = 'running';
+			$this->initiator = $this->getCurrentUser();
+			$this->scores = array();
+			$this->send($this->getCurrentChannel(), null,
+				'The snack timer has been started by '.$this->getUserNameFromUserId($this->initiator)."\n".
+				'Please vote'.(!is_null($this->subject) ? ' for '.$this->subject : ''));
+			$this->send($this->getCurrentChannel(), $this->getCurrentUser(), 'Use "'.$this->getName().' done" to end the session');
+		}
+		else {
+			$this->send($this->getCurrentChannel(), $this->getCurrentUser(), 'A tea session is still active');
+		}
+	}
+
+	private function status() {
+		$message = 'Current status : '.$this->status;
+		if ($this->status == 'running') {
+			$message .= "\n".'Initiator : '.$this->getUserNameFromUserId($this->initiator);
+		}
+		$this->send($this->getCurrentChannel(), null, $message);
+		if ($this->status == 'running') {
+			if (empty($this->scores)) {
+				$this->send($this->getCurrentChannel(), null, 'Your snack is not ready yet!');
+			}
+			else {
+				$message = '';
+				foreach ($this->scores as $user => $score) {
+					$message .= $this->getUserNameFromUserId($user).' has voted'."\n";
+				}
+				$this->send($this->getCurrentChannel(), null, $message);
+			}
+		}
 	}
 
 }
@@ -28,23 +88,24 @@ $bot->loadCommand(new MyCommand());
 $bot->loadInternalCommands(); // this loads example commands
 
 // active messaging: sends messages to users without the need for them to send one first
-$bot->loadPushNotifier(function () {
-	return [
-		'channel' => '#pi-mirror-commands',
-		'username' => '@phpslackbot',
-		'message' => "You've been replaced!"
-		];
-});
-
 /**
+ * temporarily disabled
  *
  * $bot->loadPushNotifier(function () {
 return [
-'channel' => '@phpslackbot',
-'username' => null,
-'message' => "It is time to buy another Sensly HAT" .time()
+'channel' => '#pi-mirror-commands',
+'username' => '@phpslackbot',
+'message' => "Testing active messaging function..."
 ];
-}, 1800);
- **/
+});
 
-$bot->run();
+$bot->loadPushNotifier(function () {
+return [
+'channel' => '#pi-mirror-commands',
+'username' => '@shihlin',
+'message' => "Good evening, it is: " . date("D M j h:i:s A T Y")
+];
+});
+ */
+
+$bot->run(); // this launches the script
