@@ -24,9 +24,9 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			case 'start':
 				$this->start($args);
 				break;
-			//case 'status':
-				//$this->status();
-				//break;
+			case 'status':
+				$this->status();
+				break;
 			//case 'cancel':
 				//$this->end();
 				//break;
@@ -47,6 +47,26 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			$this->send($this->getCurrentChannel(), null,
 				"The tea kettle has been started by ".$this->getUserNameFromUserId($this->initiator)."\n".
 				"Please wait!");
+		}
+	}
+
+	private function status() {
+		$message = 'Current Status : '.$this->status;
+		if($this->status == 'running') {
+			$message .= "\n".'Initiator : '.$this->getUserNameFromUserId($this->initiator);
+		}
+		$this->send($this->getCurrentChannel(), null, $message);
+		if($this->status == 'running') {
+			if(empty($this->drinks)) {
+				$this->send($this->getCurrentChannel(), null, 'No one is brewing tea right now.');
+			}
+			else {
+				$message = '';
+				foreach ($this->drinks as $user => $drink) {
+					$message .= $this->getUserNameFromUserId($user).'has started the tea'."\n";
+				}
+				$this->send($this->getCurrentChannel(), null, $message);
+			}
 		}
 	}
 
@@ -113,7 +133,13 @@ class HelpCommand extends \PhpSlackBot\Command\BaseCommand {
 	}
 
 	protected function execute($message, $context) {
-		$this->send($this->getCurrentChannel(), null, "What can snackbot do for you? /n tea, coffee, bagel...");
+		$this->send($this->getCurrentChannel(), null, "Currently, Snackbot can notify you when your snack is ready. 
+		Options: !tea, !coffee, !bagel.
+		If you are indecisive, !lucky allows me to choose a snack for you :smiley:
+		`!tea start` - start snack preparation 
+		`!tea status` - status of snack 
+		`!tea cancel` - cancel the timer
+		`!help` - access the list of commands");
 	}
 }
 
@@ -132,17 +158,23 @@ $bot->loadCommand(new HelpCommand());
 $bot->loadInternalCommands(); // this loads example commands
 
 // active messaging: sends messages to users without the need for them to send one first
+
 /**
  * temporarily disabled
- *
- * $bot->loadPushNotifier(function () {
+ *$bot->loadPushNotifier(function () {
 return [
 'channel' => '#pi-mirror-commands',
 'username' => '@phpslackbot',
-'message' => "Testing active messaging function..."
+'message' => "Snackbot needs some snacks"
 ];
 });
+ */
 
+
+/**
+ * temporarily disabled
+ *
+ *
 $bot->loadPushNotifier(function () {
 return [
 'channel' => '#pi-mirror-commands',
@@ -153,3 +185,8 @@ return [
  */
 
 $bot->run(); // this launches the script
+
+
+/**
+ *
+ */
