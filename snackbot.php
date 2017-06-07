@@ -10,7 +10,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	private $initiator;
 	private $drinks = array();
-	private $status = 'free';
+	private $status = 'Tea timer has not been started.';
 
 	protected function configure() {
 		$this->setName('!tea');
@@ -28,42 +28,56 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 				$this->status();
 				break;
 			//case 'cancel':
-				//$this->end();
-				//break;
+			//$this->end();
+			//break;
 			default:
 				$this->send($this->getCurrentChannel(), $this->getCurrentUser(), "Sorry, that is not a possible command. Please try again");
 		}
 	}
 
 	private function start($args) {
-		if($this->status == 'free') {
-			$this->subject = isset($args[2]) ? $args[2]: null;
+		if($this->status == 'Tea timer has not been started.') {
+			$this->subject = isset($args[2]) ? $args[2] : null;
 			if(!is_null($this->subject)) {
 				$this->subject = str_replace(array('<', '>'), '', $this->subject);
 			}
-			//$this->status = 'running';
-			$this->initiator = $this->getCurrentUser();
-			$this->drinks = array();
-			$this->send($this->getCurrentChannel(), null,
-				"The tea kettle has been started by ".$this->getUserNameFromUserId($this->initiator)."\n".
-				"Please wait!");
+			// timer event
+			$loop = React\EventLoop\Factory::create();
+			$loop->addTimer(4.18, function () {
+				$this->send($this->getCurrentChannel(), null, "Your tea is ready.");
+				echo 'Your tea is ready.' . PHP_EOL;
+			});
+
+			// created a start loop for 0.001s
+			$startLoop = React\EventLoop\Factory::create();
+			$startLoop->addTimer(0.001, function () {
+
+
+				$this->status = 'running';
+				$this->initiator = $this->getCurrentUser();
+				$this->drinks = array();
+				$this->send($this->getCurrentChannel(), null,
+					"The tea timer has been started by " . $this->getUserNameFromUserId($this->initiator) . "\n" .
+					"Please wait!");
+			});
+			$startLoop->run();
+			$loop->run();
 		}
 	}
 
 	private function status() {
-		$message = 'Current Status : '.$this->status;
+		$message = 'Current Tea Brew Status : ' . $this->status;
 		if($this->status == 'running') {
-			$message .= "\n".'Initiator : '.$this->getUserNameFromUserId($this->initiator);
+			$message .= "\n" . 'Initiator : ' . $this->getUserNameFromUserId($this->initiator);
 		}
 		$this->send($this->getCurrentChannel(), null, $message);
 		if($this->status == 'running') {
 			if(empty($this->drinks)) {
 				$this->send($this->getCurrentChannel(), null, 'No one is brewing tea right now.');
-			}
-			else {
+			} else {
 				$message = '';
-				foreach ($this->drinks as $user => $drink) {
-					$message .= $this->getUserNameFromUserId($user).'has started the tea'."\n";
+				foreach($this->drinks as $user => $drink) {
+					$message .= $this->getUserNameFromUserId($user) . 'has started the tea' . "\n";
 				}
 				$this->send($this->getCurrentChannel(), null, $message);
 			}
@@ -72,18 +86,18 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	private function getArgs($message) {
 		$args = array();
-		if (isset($message['text'])) {
+		if(isset($message['text'])) {
 			$args = array_values(array_filter(explode(' ', $message['text'])));
 		}
 		$commandName = $this->getName();
 		// Remove args which are before the command name
 		$finalArgs = array();
 		$remove = true;
-		foreach ($args as $arg) {
-			if ($commandName == $arg) {
+		foreach($args as $arg) {
+			if($commandName == $arg) {
 				$remove = false;
 			}
-			if (!$remove) {
+			if(!$remove) {
 				$finalArgs[] = $arg;
 			}
 		}
@@ -95,7 +109,6 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 /**
  * Coffee command
  */
-
 class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function configure() {
@@ -162,12 +175,12 @@ $bot->loadInternalCommands(); // this loads example commands
 /**
  * temporarily disabled
  *$bot->loadPushNotifier(function () {
-return [
-'channel' => '#pi-mirror-commands',
-'username' => '@phpslackbot',
-'message' => "Snackbot needs some snacks"
-];
-});
+ * return [
+ * 'channel' => '#pi-mirror-commands',
+ * 'username' => '@phpslackbot',
+ * 'message' => "Snackbot needs some snacks"
+ * ];
+ * });
  */
 
 
@@ -175,13 +188,13 @@ return [
  * temporarily disabled
  *
  *
-$bot->loadPushNotifier(function () {
-return [
-'channel' => '#pi-mirror-commands',
-'username' => '@shihlin',
-'message' => "Good evening, it is: " . date("D M j h:i:s A T Y")
-];
-});
+ * $bot->loadPushNotifier(function () {
+ * return [
+ * 'channel' => '#pi-mirror-commands',
+ * 'username' => '@shihlin',
+ * 'message' => "Good evening, it is: " . date("D M j h:i:s A T Y")
+ * ];
+ * });
  */
 
 $bot->run(); // this launches the script
