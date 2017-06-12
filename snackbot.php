@@ -2,6 +2,8 @@
 require_once("/etc/apache2/capstone-mysql/encrypted-config.php");
 require 'vendor/autoload.php';
 use PhpSlackBot\Bot;
+use PubNub\PubNub;
+use PubNub\PNConfiguration;
 
 /**
  * Tea command
@@ -11,6 +13,23 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 	private $initiator;
 	private $drinks = array();
 	private $status = 'Tea timer has not been started.';
+	private $pubNub = null;
+
+	public function __construct() {
+		//grab mySQL statement
+		$config = readConfig("/etc/apache2/capstone-mysql/piomirrors.ini");
+
+		//variable that houses pub and sub keys
+		$pubNubConfig = json_decode($config["pubNub"]);
+
+		$pnconf = new PNConfiguration();
+		$this->pubNub = new PubNub($pnconf);
+
+		$pnconf->setSubscribeKey($pubNubConfig->subscribe);
+		$pnconf->setPublishKey($pubNubConfig->publish);
+
+	}
+
 
 	protected function configure() {
 		$this->setName('!tea');
@@ -42,26 +61,39 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 				$this->subject = str_replace(array('<', '>'), '', $this->subject);
 			}
 			// timer event
-			$loop = React\EventLoop\Factory::create();
-			$loop->addTimer(4.18, function () {
-				$this->send($this->getCurrentChannel(), null, "Your tea is ready.");
-				echo 'Your tea is ready.' . PHP_EOL;
-			});
+			//$loop = React\EventLoop\Factory::create();
+			//$loop->addTimer(4.18, function () {
+			//$this->send($this->getCurrentChannel(), null, "Your tea is ready.");
+			// echo 'Your tea is ready.' . PHP_EOL;
+			//});
 
 			// created a start loop for 0.001s
-			$startLoop = React\EventLoop\Factory::create();
-			$startLoop->addTimer(0.001, function () {
+			//$startLoop = React\EventLoop\Factory::create();
+			//$startLoop->addTimer(0.001, function () {
 
 
-				$this->status = 'running';
-				$this->initiator = $this->getCurrentUser();
-				$this->drinks = array();
-				$this->send($this->getCurrentChannel(), null,
-					"/remind #team_pi this is a test in 5 seconds " . $this->getUserNameFromUserId($this->initiator) . "\n" .
-					"Please wait!");
-			});
-			$startLoop->run();
-			$loop->run();
+			$this->status = 'running';
+			$this->initiator = $this->getCurrentUser();
+			$this->drinks = array();
+			$this->send($this->getCurrentChannel(), null,
+				"The tea timer has started " . $this->getUserNameFromUserId($this->initiator) . "\n" .
+				"Please wait!");
+
+			$teaPot = new stdClass();
+			$teaPot->user = $this->getUserNameFromUserId($this->initiator);
+			$teaPot->time = round(microtime(true) * 1000);
+
+
+			$result = $this->pubNub->publish()
+				->channel("tea")
+				->message($teaPot)
+				->sync();
+
+			print_r($result);
+
+			//});
+			//$startLoop->run();
+			//$loop->run();
 		}
 	}
 
@@ -161,6 +193,7 @@ $config = readConfig("/etc/apache2/capstone-mysql/piomirrors.ini");
 
 //variable that will house the API key for the Slack API
 $slack = $config["slack"];
+
 
 $bot = new Bot();
 $bot->setToken($slack);
