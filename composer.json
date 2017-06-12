@@ -2,6 +2,7 @@
   "minimum-stability" : "dev",
   "require": {
     "jclg/php-slack-bot": "dev-master",
-    "react/event-loop": "@stable"
+    "react/event-loop": "@stable",
+    "pubnub/pubnub": "@stable"
   }
 }

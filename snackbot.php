@@ -57,7 +57,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 				$this->initiator = $this->getCurrentUser();
 				$this->drinks = array();
 				$this->send($this->getCurrentChannel(), null,
-					"The tea timer has been started by " . $this->getUserNameFromUserId($this->initiator) . "\n" .
+					"/remind #team_pi this is a test in 5 seconds " . $this->getUserNameFromUserId($this->initiator) . "\n" .
 					"Please wait!");
 			});
 			$startLoop->run();

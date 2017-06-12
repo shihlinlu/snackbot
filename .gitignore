@@ -3,5 +3,4 @@
 /node_modules
 /vendor
 bot.php
-composer.lock
 composer.phar
