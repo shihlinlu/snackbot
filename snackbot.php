@@ -3,7 +3,35 @@ require_once("/etc/apache2/capstone-mysql/encrypted-config.php");
 require 'vendor/autoload.php';
 use PhpSlackBot\Bot;
 use PubNub\PubNub;
+use PubNub\Enums\PNStatusCategory;
+use PubNub\Callbacks\SubscribeCallback;
 use PubNub\PNConfiguration;
+
+class MySubscribeCallback extends SubscribeCallback {
+	function status($pubnub, $status) {
+		if ($status->getCategory() === PNStatusCategory::PNUnexpectedDisconnectCategory) {
+			// This event happens when radio / connectivity is lost
+		} else if ($status->getCategory() === PNStatusCategory::PNConnectedCategory) {
+			// Connect event. You can do stuff like publish, and know you'll get it
+			// Or just use the connected event to confirm you are subscribed for
+			// UI / internal notifications, etc
+		} else if ($status->getCategory() === PNStatusCategory::PNDecryptionErrorCategory) {
+			// Handle message decryption error. Probably client configured to
+			// encrypt messages and on live data feed it received plain text.
+		}
+	}
+
+	function message($pubnub, $message) {
+		// Handle new message stored in message.message
+	}
+
+	function presence($pubnub, $presence) {
+		// handle incoming presence data
+	}
+}
+
+$subscribeCallback = new MySubscribeCallback();
+
 
 /**
  * Tea command
@@ -15,19 +43,9 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 	private $status = 'Tea timer has not been started.';
 	private $pubNub = null;
 
-	public function __construct() {
-		//grab mySQL statement
-		$config = readConfig("/etc/apache2/capstone-mysql/piomirrors.ini");
-
-		//variable that houses pub and sub keys
-		$pubNubConfig = json_decode($config["pubNub"]);
-
-		$pnconf = new PNConfiguration();
-		$this->pubNub = new PubNub($pnconf);
-
-		$pnconf->setSubscribeKey($pubNubConfig->subscribe);
-		$pnconf->setPublishKey($pubNubConfig->publish);
-
+	// Constructor to pass PubNub object
+	public function __construct(PubNub $newPubNub) {
+		$this->pubNub = $newPubNub;
 	}
 
 
@@ -46,9 +64,6 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			case 'status':
 				$this->status();
 				break;
-			//case 'cancel':
-			//$this->end();
-			//break;
 			default:
 				$this->send($this->getCurrentChannel(), $this->getCurrentUser(), "Sorry, that is not a possible command. Please try again");
 		}
@@ -60,29 +75,27 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			if(!is_null($this->subject)) {
 				$this->subject = str_replace(array('<', '>'), '', $this->subject);
 			}
-			// timer event
-			//$loop = React\EventLoop\Factory::create();
-			//$loop->addTimer(4.18, function () {
-			//$this->send($this->getCurrentChannel(), null, "Your tea is ready.");
-			// echo 'Your tea is ready.' . PHP_EOL;
-			//});
 
-			// created a start loop for 0.001s
-			//$startLoop = React\EventLoop\Factory::create();
-			//$startLoop->addTimer(0.001, function () {
-
+			//timer event
+			$loop = React\EventLoop\Factory::create();
+			$loop->addTimer(10.10, function () {
+				$this->send($this->getCurrentChannel(), null, "Your tea is ready.");
+			 	//echo 'Your tea is ready.' . PHP_EOL;
+				$this->pubNub->publish()
+					->channel("tea")
+					->message(['Tea Has Finished', "Finished"])
+					->sync();
+				$this->status = 'Tea timer has not been started.';
+			});
 
 			$this->status = 'running';
 			$this->initiator = $this->getCurrentUser();
 			$this->drinks = array();
-			$this->send($this->getCurrentChannel(), null,
-				"The tea timer has started " . $this->getUserNameFromUserId($this->initiator) . "\n" .
-				"Please wait!");
 
 			$teaPot = new stdClass();
 			$teaPot->user = $this->getUserNameFromUserId($this->initiator);
-			$teaPot->time = round(microtime(true) * 1000);
-
+			$teaPot->time = round(microtime(true) * 1000) + 418000;
+			$teaPot->message = "Your tea has started brewing!";
 
 			$result = $this->pubNub->publish()
 				->channel("tea")
@@ -91,9 +104,8 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 
 			print_r($result);
 
-			//});
 			//$startLoop->run();
-			//$loop->run();
+			$loop->run();
 		}
 	}
 
@@ -195,9 +207,21 @@ $config = readConfig("/etc/apache2/capstone-mysql/piomirrors.ini");
 $slack = $config["slack"];
 
 
+//variable that houses pub and sub keys
+$pubNubConfig = json_decode($config["pubNub"]);
+
+$pnconf = new PNConfiguration();
+$pnconf->setSubscribeKey($pubNubConfig->subscribe);
+$pnconf->setPublishKey($pubNubConfig->publish);
+$pnconf->setSecure(true);
+
+// new pubnub object
+$newPubNub = new PubNub($pnconf);
+
 $bot = new Bot();
 $bot->setToken($slack);
-$bot->loadCommand(new TeaCommand());
+// pubnub object is passed to TeaCommand
+$bot->loadCommand(new TeaCommand($newPubNub));
 $bot->loadCommand(new CoffeeCommand());
 $bot->loadCommand(new BagelCommand());
 $bot->loadCommand(new HelpCommand());
