@@ -205,7 +205,7 @@ class About extends \PhpSlackBot\Command\BaseCommand {
 	}
 
 	protected function execute($message, $context) {
-		$this->send($this->getCurrentChannel(), null, "While I cannot deliver a snack to you, how about a tea, coffee, or bagel? I can let you know when it's ready. Just type '!help' to see a list of commands :tea:");
+		$this->send($this->getCurrentChannel(), null, "While I cannot deliver a snack to you, how about a tea, coffee, or bagel? I can let you know when it's ready. Just type `!help` to see a list of commands :tea:");
 
 	}
 }
