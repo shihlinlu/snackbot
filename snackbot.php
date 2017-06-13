@@ -181,6 +181,36 @@ class BagelCommand extends \PhpSlackBot\Command\BaseCommand {
 }
 
 /**
+ * Violent Delights
+ */
+class Westworld extends \PhpSlackBot\Command\BaseCommand {
+
+	protected function configure() {
+		$this->setName('Who am I?');
+	}
+
+	protected function execute($message, $context) {
+		$this->send($this->getCurrentChannel(), null, "Visit Westworld and you shall see. https://68.media.tumblr.com/bfa34642b48a1db454f020aab860b4e8/tumblr_ofpimkthf51u6p9qxo1_500.gif");
+
+	}
+}
+
+/**
+ * About Snackbot
+ */
+class About extends \PhpSlackBot\Command\BaseCommand {
+
+	protected function configure() {
+		$this->setName('I need some snacks');
+	}
+
+	protected function execute($message, $context) {
+		$this->send($this->getCurrentChannel(), null, "While I cannot deliver a snack to you, how about a tea, coffee, or bagel? I can let you know when it's ready. Just type '!help' to see a list of commands :tea:");
+
+	}
+}
+
+/**
  * Help command lists all possible commands to interact with the bot
  */
 class HelpCommand extends \PhpSlackBot\Command\BaseCommand {
@@ -199,6 +229,7 @@ class HelpCommand extends \PhpSlackBot\Command\BaseCommand {
 		`!help` - access the list of commands");
 	}
 }
+
 
 //grab mySQL statement
 $config = readConfig("/etc/apache2/capstone-mysql/piomirrors.ini");
@@ -225,6 +256,8 @@ $bot->loadCommand(new TeaCommand($newPubNub));
 $bot->loadCommand(new CoffeeCommand());
 $bot->loadCommand(new BagelCommand());
 $bot->loadCommand(new HelpCommand());
+$bot->loadCommand(new Westworld());
+$bot->loadCommand(new About());
 $bot->loadInternalCommands(); // this loads example commands
 
 // active messaging: sends messages to users without the need for them to send one first
