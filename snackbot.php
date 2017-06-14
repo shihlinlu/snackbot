@@ -80,10 +80,15 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			$loop = React\EventLoop\Factory::create();
 			$loop->addTimer(10.10, function () {
 				$this->send($this->getCurrentChannel(), null, "Your tea is ready.");
+
+				$teaMsg = new stdClass();
+				$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
+				$teaMsg->time = round(microtime(true) * 1000) + 418000;
+				$teaMsg->text = "your tea has finished!";
 			 	//echo 'Your tea is ready.' . PHP_EOL;
 				$this->pubNub->publish()
 					->channel("tea")
-					->message(['Tea Has Finished', "Finished"])
+					->message($teaMsg)
 					->sync();
 				$this->status = 'Tea timer has not been started.';
 			});
@@ -92,14 +97,14 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			$this->initiator = $this->getCurrentUser();
 			$this->drinks = array();
 
-			$teaPot = new stdClass();
-			$teaPot->user = $this->getUserNameFromUserId($this->initiator);
-			$teaPot->time = round(microtime(true) * 1000) + 418000;
-			$teaPot->message = "Your tea has started brewing!";
+			$teaMsg = new stdClass();
+			$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
+			$teaMsg->time = round(microtime(true) * 1000) + 418000;
+			$teaMsg->text = "your tea has started brewing!";
 
 			$result = $this->pubNub->publish()
 				->channel("tea")
-				->message($teaPot)
+				->message($teaMsg)
 				->sync();
 
 			print_r($result);
