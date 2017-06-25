@@ -159,6 +159,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
  * Coffee command
  */
 class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
+
 	private $initiator;
 	private $drinks = array();
 	private $status = 'Coffee timer has not started.';
@@ -205,7 +206,6 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 				$coffeeMsg->user = $this->getUserNameFromUserId($this->initiator);
 				$coffeeMsg->time = round(microtime(true) * 1000) + 418000;
 				$coffeeMsg->text = "your coffee has finished!";
-				//echo 'Your tea is ready.' . PHP_EOL;
 				$this->pubNub->publish()
 					->channel("coffee")
 					->message($coffeeMsg)
@@ -312,6 +312,7 @@ class About extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function configure() {
 		$this->setName('I need some snacks');
+		$this->setName('!About');
 	}
 
 	protected function execute($message, $context) {
@@ -372,12 +373,13 @@ $bot->loadCommand(new About());
 $bot->loadInternalCommands(); // this loads example commands
 
 // active messaging: sends messages to users without the need for them to send one first
-$bot->loadPushNotifier(function () {
+/** $bot->loadPushNotifier(function () {
 return [
 'channel' => '#pi-mirror-commands',
 'message' => "Snackbot is experiencing challenges with the coffee timer."
 	];
 });
+ **/
 
 /**
  * temporarily disabled
