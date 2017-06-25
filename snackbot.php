@@ -166,8 +166,8 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 	private $pubNub = null;
 
 	// Constructor to pass PubNub object
-	public function __construct(PubNub $newPubNub2) {
-		$this->pubNub = $newPubNub2;
+	public function __construct(PubNub $newPubNub) {
+		$this->pubNub = $newPubNub;
 	}
 
 	protected function configure() {
@@ -312,7 +312,7 @@ class About extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function configure() {
 		$this->setName('I need some snacks');
-		$this->setName('!About');
+		$this->setName('!about');
 	}
 
 	protected function execute($message, $context) {
@@ -359,13 +359,12 @@ $pnconf->setSecure(true);
 
 // new pubnub object
 $newPubNub = new PubNub($pnconf);
-$newPubNub2 = new PubNub($pnconf);
 
 $bot = new Bot();
 $bot->setToken($slack);
 // pubnub object is passed to TeaCommand
 $bot->loadCommand(new TeaCommand($newPubNub));
-$bot->loadCommand(new CoffeeCommand($newPubNub2));
+$bot->loadCommand(new CoffeeCommand($newPubNub));
 $bot->loadCommand(new BagelCommand());
 $bot->loadCommand(new HelpCommand());
 $bot->loadCommand(new Westworld());
