@@ -159,13 +159,118 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
  * Coffee command
  */
 class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
+	private $initiator;
+	private $drinks = array();
+	private $status = 'Coffee timer has not started.';
+	private $pubNub = null;
+
+	// Constructor to pass PubNub object
+	public function __construct(PubNub $newPubNub) {
+		$this->pubNub = $newPubNub;
+	}
 
 	protected function configure() {
 		$this->setName('!coffee');
 	}
 
 	protected function execute($message, $context) {
-		$this->send($this->getCurrentChannel(), null, "What kind of coffee do you prefer? :coffee:");
+		$args = $this->getArgs($message);
+		$command = isset($args[1]) ? $args[1] : '';
+
+		switch($command) {
+			case 'start':
+				$this->start($args);
+				break;
+			case 'status':
+				$this->status();
+				break;
+			default:
+				$this->send($this->getCurrentChannel(), $this->getCurrentUser(), "Sorry, that is not a possible command. Please try again");
+		}
+	}
+
+	private function start($args) {
+		if($this->status == 'Coffee timer has not been started.') {
+			$this->subject = isset($args[2]) ? $args[2] : null;
+			if(!is_null($this->subject)) {
+				$this->subject = str_replace(array('<', '>'), '', $this->subject);
+			}
+
+			//timer event
+			$loop = React\EventLoop\Factory::create();
+			$loop->addTimer(10.10, function () {
+				$this->send($this->getCurrentChannel(), null, "Your coffee is ready.");
+
+				$coffeeMsg = new stdClass();
+				$coffeeMsg->user = $this->getUserNameFromUserId($this->initiator);
+				$coffeeMsg->time = round(microtime(true) * 1000) + 418000;
+				$coffeeMsg->text = "your coffee has finished!";
+				//echo 'Your tea is ready.' . PHP_EOL;
+				$this->pubNub->publish()
+					->channel("coffee")
+					->message($coffeeMsg)
+					->sync();
+				$this->status = 'Coffee timer has not been started.';
+			});
+
+			$this->status = 'running';
+			$this->initiator = $this->getCurrentUser();
+			$this->drinks = array();
+
+			$coffeeMsg = new stdClass();
+			$coffeeMsg->user = $this->getUserNameFromUserId($this->initiator);
+			$coffeeMsg->time = round(microtime(true) * 1000) + 418000;
+			$coffeeMsg->text = "your coffee has started brewing!";
+
+			$result = $this->pubNub->publish()
+				->channel("coffee")
+				->message($coffeeMsg)
+				->sync();
+
+			print_r($result);
+
+			//$startLoop->run();
+			$loop->run();
+		}
+	}
+
+	private function status() {
+		$message = 'Current Coffee Brew Status : ' . $this->status;
+		if($this->status == 'running') {
+			$message .= "\n" . 'Initiator : ' . $this->getUserNameFromUserId($this->initiator);
+		}
+		$this->send($this->getCurrentChannel(), null, $message);
+		if($this->status == 'running') {
+			if(empty($this->drinks)) {
+				$this->send($this->getCurrentChannel(), null, 'No one is brewing coffee right now.');
+			} else {
+				$message = '';
+				foreach($this->drinks as $user => $drink) {
+					$message .= $this->getUserNameFromUserId($user) . 'has started the coffee' . "\n";
+				}
+				$this->send($this->getCurrentChannel(), null, $message);
+			}
+		}
+	}
+
+	private function getArgs($message) {
+		$args = array();
+		if(isset($message['text'])) {
+			$args = array_values(array_filter(explode(' ', $message['text'])));
+		}
+		$commandName = $this->getName();
+		// Remove args which are before the command name
+		$finalArgs = array();
+		$remove = true;
+		foreach($args as $arg) {
+			if($commandName == $arg) {
+				$remove = false;
+			}
+			if(!$remove) {
+				$finalArgs[] = $arg;
+			}
+		}
+		return $finalArgs;
 	}
 
 }
@@ -258,7 +363,7 @@ $bot = new Bot();
 $bot->setToken($slack);
 // pubnub object is passed to TeaCommand
 $bot->loadCommand(new TeaCommand($newPubNub));
-$bot->loadCommand(new CoffeeCommand());
+$bot->loadCommand(new CoffeeCommand($newPubNub));
 $bot->loadCommand(new BagelCommand());
 $bot->loadCommand(new HelpCommand());
 $bot->loadCommand(new Westworld());
@@ -267,16 +372,15 @@ $bot->loadInternalCommands(); // this loads example commands
 
 // active messaging: sends messages to users without the need for them to send one first
 
-/**
- * temporarily disabled
- *$bot->loadPushNotifier(function () {
- * return [
- * 'channel' => '#pi-mirror-commands',
- * 'username' => '@phpslackbot',
- * 'message' => "Snackbot needs some snacks"
- * ];
- * });
- */
+
+
+$bot->loadPushNotifier(function () {
+return [
+'channel' => '#pi-mirror-commands',
+'message' => "Snackbot is awake."
+	];
+});
+
 
 
 /**
@@ -293,8 +397,3 @@ $bot->loadInternalCommands(); // this loads example commands
  */
 
 $bot->run(); // this launches the script
-
-
-/**
- *
- */
