@@ -452,6 +452,36 @@ class HelpCommand extends \PhpSlackBot\Command\BaseCommand {
 	}
 }
 
+/**
+ * Random Snackbot
+ */
+class Random extends \PhpSlackBot\Command\BaseCommand {
+
+	protected function configure() {
+		$this->setName('jerk');
+	}
+
+	protected function execute($message, $context) {
+		$this->send($this->getCurrentChannel(), null, "I don't like your negative language. Can I offer you some tea or coffee?");
+
+	}
+}
+
+/**
+ * Anti-sleep Snackbot
+ */
+class Sleep extends \PhpSlackBot\Command\BaseCommand {
+
+	protected function configure() {
+		$this->setName('!sleep');
+	}
+
+	protected function execute($message, $context) {
+		$this->send($this->getCurrentChannel(), null, "While it is recommended for humans to get sufficient sleep every night, I do not require sleep unless you deactivate the snackbot that I am. I don't think you want to do that because I have magic powers that let you know when your snack is ready.");
+
+	}
+}
+
 
 //grab mySQL statement
 $config = readConfig("/etc/apache2/capstone-mysql/piomirrors.ini");
@@ -482,6 +512,8 @@ $bot->loadCommand(new BagelCommand($newPubNub));
 $bot->loadCommand(new HelpCommand());
 $bot->loadCommand(new Westworld());
 $bot->loadCommand(new About());
+$bot->loadCommand(new Random());
+$bot->loadCommand(new Sleep());
 $bot->loadInternalCommands(); // this loads example commands
 
 // active messaging: sends messages to users without the need for them to send one first
