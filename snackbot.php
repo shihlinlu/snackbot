@@ -51,6 +51,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function configure() {
 		$this->setName('!tea');
+
 	}
 
 	protected function execute($message, $context) {
@@ -84,10 +85,10 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 				$teaMsg = new stdClass();
 				$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
 				$teaMsg->time = round(microtime(true) * 1000) + 418000;
+				//posts tea brew completion alert in PubNub once 10 seconds has passed
 				$teaMsg->text = "your tea has finished!";
-			 	//echo 'Your tea is ready.' . PHP_EOL;
 				$this->pubNub->publish()
-					->channel("tea")
+					->channel("snack")
 					->message($teaMsg)
 					->sync();
 				$this->status = 'Tea timer has not been started.';
@@ -103,7 +104,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			$teaMsg->text = "your tea has started brewing!";
 
 			$result = $this->pubNub->publish()
-				->channel("tea")
+				->channel("snack")
 				->message($teaMsg)
 				->sync();
 
@@ -162,7 +163,7 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 
 	private $initiator;
 	private $drinks = array();
-	private $status = 'Coffee timer has not started.';
+	private $status = 'Coffee timer has not been started.';
 	private $pubNub = null;
 
 	// Constructor to pass PubNub object
@@ -202,13 +203,14 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 			$loop->addTimer(10.10, function () {
 				$this->send($this->getCurrentChannel(), null, "Your coffee is ready.");
 
-				$coffeeMsg = new stdClass();
-				$coffeeMsg->user = $this->getUserNameFromUserId($this->initiator);
-				$coffeeMsg->time = round(microtime(true) * 1000) + 418000;
-				$coffeeMsg->text = "your coffee has finished!";
+				$teaMsg = new stdClass();
+				$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
+				$teaMsg->time = round(microtime(true) * 1000) + 418000;
+				//posts tea brew completion alert in PubNub once 10 seconds has passed
+				$teaMsg->text = "your coffee has finished!";
 				$this->pubNub->publish()
-					->channel("coffee")
-					->message($coffeeMsg)
+					->channel("snack")
+					->message($teaMsg)
 					->sync();
 				$this->status = 'Coffee timer has not been started.';
 			});
@@ -217,14 +219,14 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 			$this->initiator = $this->getCurrentUser();
 			$this->drinks = array();
 
-			$coffeeMsg = new stdClass();
-			$coffeeMsg->user = $this->getUserNameFromUserId($this->initiator);
-			$coffeeMsg->time = round(microtime(true) * 1000) + 418000;
-			$coffeeMsg->text = "your coffee has started brewing!";
+			$teaMsg = new stdClass();
+			$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
+			$teaMsg->time = round(microtime(true) * 1000) + 418000;
+			$teaMsg->text = "your coffee has started brewing!";
 
 			$result = $this->pubNub->publish()
-				->channel("coffee")
-				->message($coffeeMsg)
+				->channel("snack")
+				->message($teaMsg)
 				->sync();
 
 			print_r($result);
@@ -233,6 +235,7 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 			$loop->run();
 		}
 	}
+
 
 	private function status() {
 		$message = 'Current Coffee Brew Status : ' . $this->status;
@@ -313,6 +316,7 @@ class About extends \PhpSlackBot\Command\BaseCommand {
 	protected function configure() {
 		$this->setName('I need some snacks');
 		$this->setName('!about');
+		$this->setName('!wat');
 	}
 
 	protected function execute($message, $context) {
@@ -360,10 +364,12 @@ $pnconf->setSecure(true);
 // new pubnub object
 $newPubNub = new PubNub($pnconf);
 
+
 $bot = new Bot();
 $bot->setToken($slack);
 // pubnub object is passed to TeaCommand
 $bot->loadCommand(new TeaCommand($newPubNub));
+// pubnub object is passed to CoffeeCommand
 $bot->loadCommand(new CoffeeCommand($newPubNub));
 $bot->loadCommand(new BagelCommand());
 $bot->loadCommand(new HelpCommand());
