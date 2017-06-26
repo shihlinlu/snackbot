@@ -48,10 +48,8 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 		$this->pubNub = $newPubNub;
 	}
 
-
 	protected function configure() {
 		$this->setName('!tea');
-
 	}
 
 	protected function execute($message, $context) {
@@ -98,6 +96,7 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 			$this->initiator = $this->getCurrentUser();
 			$this->drinks = array();
 
+			//message is published to pubnub channel that tea has started brewing
 			$teaMsg = new stdClass();
 			$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
 			$teaMsg->time = round(microtime(true) * 1000) + 418000;
@@ -153,7 +152,6 @@ class TeaCommand extends \PhpSlackBot\Command\BaseCommand {
 		}
 		return $finalArgs;
 	}
-
 }
 
 /**
@@ -275,7 +273,6 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
 		}
 		return $finalArgs;
 	}
-
 }
 
 /**
@@ -358,7 +355,6 @@ class BagelCommand extends \PhpSlackBot\Command\BaseCommand {
 		}
 	}
 
-
 	private function status() {
 		$message = 'Current Bagel Toasting Status : ' . $this->status;
 		if($this->status == 'running') {
@@ -397,7 +393,6 @@ class BagelCommand extends \PhpSlackBot\Command\BaseCommand {
 		}
 		return $finalArgs;
 	}
-
 }
 
 /**
@@ -411,7 +406,6 @@ class Westworld extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function execute($message, $context) {
 		$this->send($this->getCurrentChannel(), null, "Visit Westworld and you shall see. https://68.media.tumblr.com/bfa34642b48a1db454f020aab860b4e8/tumblr_ofpimkthf51u6p9qxo1_500.gif");
-
 	}
 }
 
@@ -428,7 +422,6 @@ class About extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function execute($message, $context) {
 		$this->send($this->getCurrentChannel(), null, "While I cannot deliver a snack to you, how about a tea, coffee, or bagel? I can let you know when it's ready. Just type `!help` to see a list of commands :tea:");
-
 	}
 }
 
@@ -478,7 +471,6 @@ class Sleep extends \PhpSlackBot\Command\BaseCommand {
 
 	protected function execute($message, $context) {
 		$this->send($this->getCurrentChannel(), null, "While it is recommended for humans to get sufficient sleep every night, I do not require sleep unless you deactivate the snackbot that I am. I don't think you want to do that because I have magic powers that let you know when your snack is ready.");
-
 	}
 }
 
@@ -504,9 +496,8 @@ $newPubNub = new PubNub($pnconf);
 
 $bot = new Bot();
 $bot->setToken($slack);
-// pubnub object is passed to TeaCommand
+// pubnub object is passed to desired commands
 $bot->loadCommand(new TeaCommand($newPubNub));
-// pubnub object is passed to CoffeeCommand
 $bot->loadCommand(new CoffeeCommand($newPubNub));
 $bot->loadCommand(new BagelCommand($newPubNub));
 $bot->loadCommand(new HelpCommand());
