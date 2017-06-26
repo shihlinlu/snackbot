@@ -283,12 +283,119 @@ class CoffeeCommand extends \PhpSlackBot\Command\BaseCommand {
  */
 class BagelCommand extends \PhpSlackBot\Command\BaseCommand {
 
+	private $initiator;
+	private $drinks = array();
+	private $status = 'Bagel timer has not been started.';
+	private $pubNub = null;
+
+	// Constructor to pass PubNub object
+	public function __construct(PubNub $newPubNub) {
+		$this->pubNub = $newPubNub;
+	}
+
 	protected function configure() {
 		$this->setName('!bagel');
 	}
 
 	protected function execute($message, $context) {
-		$this->send($this->getCurrentChannel(), null, "There are many bagels, you should go to the kitchen and find out. :bread:");
+		$args = $this->getArgs($message);
+		$command = isset($args[1]) ? $args[1] : '';
+
+		switch($command) {
+			case 'start':
+				$this->start($args);
+				break;
+			case 'status':
+				$this->status();
+				break;
+			default:
+				$this->send($this->getCurrentChannel(), $this->getCurrentUser(), "Sorry, that is not a possible command. Please try again");
+		}
+	}
+
+	private function start($args) {
+		if($this->status == 'Bagel timer has not been started.') {
+			$this->subject = isset($args[2]) ? $args[2] : null;
+			if(!is_null($this->subject)) {
+				$this->subject = str_replace(array('<', '>'), '', $this->subject);
+			}
+
+			//timer event
+			$loop = React\EventLoop\Factory::create();
+			$loop->addTimer(10.10, function () {
+				$this->send($this->getCurrentChannel(), null, "Your bagel is ready. :bread:");
+
+				$teaMsg = new stdClass();
+				$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
+				$teaMsg->time = round(microtime(true) * 1000) + 418000;
+				//posts tea brew completion alert in PubNub once 10 seconds has passed
+				$teaMsg->text = "your bagel has finished!";
+				$this->pubNub->publish()
+					->channel("snack")
+					->message($teaMsg)
+					->sync();
+				$this->status = 'Bagel timer has not been started.';
+			});
+
+			$this->status = 'running';
+			$this->initiator = $this->getCurrentUser();
+			$this->drinks = array();
+
+			$teaMsg = new stdClass();
+			$teaMsg->user = $this->getUserNameFromUserId($this->initiator);
+			$teaMsg->time = round(microtime(true) * 1000) + 418000;
+			$teaMsg->text = "your bagel has started brewing!";
+
+			$result = $this->pubNub->publish()
+				->channel("snack")
+				->message($teaMsg)
+				->sync();
+
+			print_r($result);
+
+			//$startLoop->run();
+			$loop->run();
+		}
+	}
+
+
+	private function status() {
+		$message = 'Current Bagel Toasting Status : ' . $this->status;
+		if($this->status == 'running') {
+			$message .= "\n" . 'Initiator : ' . $this->getUserNameFromUserId($this->initiator);
+		}
+		$this->send($this->getCurrentChannel(), null, $message);
+		if($this->status == 'running') {
+			if(empty($this->drinks)) {
+				$this->send($this->getCurrentChannel(), null, 'No one is toasting bagels right now.');
+			} else {
+				$message = '';
+				foreach($this->drinks as $user => $drink) {
+					$message .= $this->getUserNameFromUserId($user) . 'has started the bagel toaster' . "\n";
+				}
+				$this->send($this->getCurrentChannel(), null, $message);
+			}
+		}
+	}
+
+	private function getArgs($message) {
+		$args = array();
+		if(isset($message['text'])) {
+			$args = array_values(array_filter(explode(' ', $message['text'])));
+		}
+		$commandName = $this->getName();
+		// Remove args which are before the command name
+		$finalArgs = array();
+		$remove = true;
+		foreach($args as $arg) {
+			if($commandName == $arg) {
+				$remove = false;
+			}
+			if(!$remove) {
+				$finalArgs[] = $arg;
+			}
+		}
+		return $finalArgs;
 	}
 
 }
@@ -371,7 +478,7 @@ $bot->setToken($slack);
 $bot->loadCommand(new TeaCommand($newPubNub));
 // pubnub object is passed to CoffeeCommand
 $bot->loadCommand(new CoffeeCommand($newPubNub));
-$bot->loadCommand(new BagelCommand());
+$bot->loadCommand(new BagelCommand($newPubNub));
 $bot->loadCommand(new HelpCommand());
 $bot->loadCommand(new Westworld());
 $bot->loadCommand(new About());
